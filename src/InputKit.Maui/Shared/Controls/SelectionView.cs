@@ -168,9 +168,24 @@ public partial class SelectionView : Grid
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(nameof(ItemsSource), typeof(IList), typeof(SelectionView), null, propertyChanged: (bo, ov, nv) => (bo as SelectionView).SetItemsSource((IList)nv));
     public static readonly BindableProperty DisabledSourceProperty = BindableProperty.Create(nameof(DisabledSource), typeof(IList), typeof(SelectionView), null, propertyChanged: (bo, ov, nv) => (bo as SelectionView).UpdateView());
-    public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create(nameof(SelectedItem), typeof(object), typeof(SelectionView), null, BindingMode.TwoWay, propertyChanged: (bo, ov, nv) => (bo as SelectionView).SetSelectedItem(nv));
-    public static readonly BindableProperty SelectedItemsProperty = BindableProperty.Create(nameof(SelectedItems), typeof(IList), typeof(SelectionView), null, BindingMode.TwoWay, propertyChanged: (bo, ov, nv) => (bo as SelectionView).SetSelectedItems((IList)nv));
-    public static readonly BindableProperty SelectedIndexProperty = BindableProperty.Create(nameof(SelectedIndex), typeof(int), typeof(SelectionView), -1, BindingMode.TwoWay, propertyChanged: (bo, ov, nv) => (bo as SelectionView).SelectedIndex = (int)nv);
+    public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create(nameof(SelectedItem), typeof(object), typeof(SelectionView), null, BindingMode.TwoWay,
+        propertyChanged: (bo, ov, nv) =>
+        {
+            if (ov != nv)
+            {
+                (bo as SelectionView).SetSelectedItem(nv);
+            }
+        });
+    public static readonly BindableProperty SelectedItemsProperty = BindableProperty.Create(nameof(SelectedItems), typeof(IList), typeof(SelectionView), null, BindingMode.TwoWay,
+        propertyChanged: (bo, ov, nv) => (bo as SelectionView).SetSelectedItems((IList)nv));
+    public static readonly BindableProperty SelectedIndexProperty = BindableProperty.Create(nameof(SelectedIndex), typeof(int), typeof(SelectionView), -1, BindingMode.TwoWay,
+        propertyChanged: (bo, ov, nv) =>
+        {
+            if (ov != nv)
+            {
+                (bo as SelectionView).SelectedIndex = (int)nv;
+            }
+        });
     public static readonly BindableProperty SelectedIndexesProperty = BindableProperty.Create(nameof(SelectedIndexes), typeof(IEnumerable<int>), typeof(SelectionView), new int[0], BindingMode.TwoWay, propertyChanged: (bo, ov, nv) => (bo as SelectionView).SelectedIndexes = (IEnumerable<int>)nv);
     public static new readonly BindableProperty BackgroundColorProperty = BindableProperty.Create(nameof(BackgroundColor), typeof(Color), typeof(SelectionView), GlobalSetting.BackgroundColor, propertyChanged: (bo, ov, nv) => (bo as SelectionView).BackgroundColor = (Color)nv);
     public static readonly BindableProperty LabelPositionProperty = BindableProperty.Create(
@@ -238,7 +253,6 @@ public partial class SelectionView : Grid
         }
     }
 
-
     protected void SetRowAndColumnDefinitions()
     {
         this.ColumnDefinitions.Clear();
@@ -268,7 +282,7 @@ public partial class SelectionView : Grid
     {
         if ((int)SelectionType % 2 == 0)
         {
-            if (sender is ISelection selection)
+            if (sender is ISelection selection && selection.IsSelected)
             {
                 if (selection.IsSelected)
                 {
@@ -293,9 +307,9 @@ public partial class SelectionView : Grid
         }
         else
         {
-            if (sender is ISelection selection)
+            if (sender is ISelection selection && selection.IsSelected)
             {
-                SetValue(SelectedItemProperty, selection.Value);
+                SelectedItem = selection.Value;
                 SetValue(SelectedIndexProperty, ItemsSource.IndexOf(selection.Value));
             }
         }
@@ -398,8 +412,13 @@ public partial class SelectionView : Grid
     private void SetSelectedItems(IList value)
     {
         foreach (var item in Children)
+        {
             if (item is ISelection selection && value != null)
-                (item as ISelection).IsSelected = value.Contains(selection.Value);
+            {
+
+                selection.IsSelected = value.Contains(selection.Value);
+            }
+        }
 
         if (value is INotifyCollectionChanged observable)
             observable.CollectionChanged += SelectedItemsChanged;
@@ -494,7 +513,17 @@ public partial class SelectionView : Grid
         public bool IsSelected
         {
             get => _isSelected;
-            set { _isSelected = value; UpdateColors(); }
+            set
+            {
+
+                if (IsDisabled)
+                {
+                    return;
+                }
+                
+                _isSelected = value;
+                UpdateColors();
+            }
         }
 
         /// <summary>
@@ -532,8 +561,7 @@ public partial class SelectionView : Grid
 
         private void UpdateSelection()
         {
-            if (CanChangeSelectedState)
-                IsSelected = !IsSelected;
+            IsSelected = !IsSelected;
         }
     }
 
@@ -568,7 +596,21 @@ public partial class SelectionView : Grid
         /// <summary>
         /// ISelection interface property
         /// </summary>
-        public bool IsSelected { get => IsChecked; set => IsChecked = value; }
+        public bool IsSelected
+        {
+            get => IsChecked; set
+            {
+                if (IsDisabled)
+                {
+                    return;
+                }
+
+                if (IsChecked != value)
+                {
+                    IsChecked = value;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -609,7 +651,21 @@ public partial class SelectionView : Grid
         /// <summary>
         /// Capsulated IsChecked
         /// </summary>
-        public bool IsSelected { get => IsChecked; set => IsChecked = value; }
+        public bool IsSelected
+        {
+            get => IsChecked; set
+            {
+                if (IsDisabled)
+                {
+                    return;
+                }
+
+                if (IsChecked != value)
+                {
+                    IsChecked = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Parameter to keep
