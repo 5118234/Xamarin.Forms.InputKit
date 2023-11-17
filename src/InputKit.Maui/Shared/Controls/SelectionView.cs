@@ -30,7 +30,6 @@ public partial class SelectionView : Grid
     #region Fields
     private SelectionType _selectionType = SelectionType.Button;
     private int _columnNumber = 2;
-    private Color _color = GlobalSetting.Color;
     private BindingBase _itemDisplayBinding;
     private int _selectedIndex = 0;
     #endregion
@@ -69,7 +68,7 @@ public partial class SelectionView : Grid
     /// <summary>
     /// Color of selections
     /// </summary>
-    public Color Color { get => _color; set { _color = value; UpdateColor(); OnPropertyChanged(); } }
+    public Color Color { get => (Color)GetValue(ColorProperty); set { SetValue(ColorProperty, value); OnPropertyChanged(); } }
 
     /// <summary>
     /// Items Source of selections
@@ -193,6 +192,9 @@ public partial class SelectionView : Grid
         returnType: typeof(LabelPosition), defaultBindingMode: BindingMode.TwoWay,
         defaultValue: GlobalSetting.LabelPosition,
         propertyChanged: (bo, ov, nv) => (bo as SelectionView).UpdateView());
+
+    public static readonly BindableProperty ColorProperty = BindableProperty.Create(nameof(Color),
+        typeof(Color), typeof(SelectionView), defaultValue: GlobalSetting.Color, propertyChanged: (bo, ov, nv) => (bo as SelectionView).UpdateColor());
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     #endregion
 
@@ -282,13 +284,14 @@ public partial class SelectionView : Grid
     {
         if ((int)SelectionType % 2 == 0)
         {
-            if (sender is ISelection selection && selection.IsSelected)
+            if (sender is ISelection selection)
             {
                 if (selection.IsSelected)
                 {
                     if (SelectedItems == null)
                         SelectedItems = Activator.CreateInstance(typeof(ObservableCollection<>).MakeGenericType(selection.Value.GetType())) as IList;
 
+                    SelectedItems.Remove(selection.Value);
                     SelectedItems.Add(selection.Value);
                 }
                 else
@@ -321,7 +324,7 @@ public partial class SelectionView : Grid
         {
             case SelectionType.Button:
             case SelectionType.MultipleButton:
-                var btn = new SelectableButton(obj, Color)
+                var btn = new SelectableButton(obj, this)
                 {
                     UnselectedColor = BackgroundColor,
                     CanChangeSelectedState = SelectionType == SelectionType.MultipleButton
@@ -329,14 +332,14 @@ public partial class SelectionView : Grid
                 return btn;
             case SelectionType.MultipleRadioButton:
             case SelectionType.RadioButton:
-                var rb = new SelectableRadioButton(obj, Color)
+                var rb = new SelectableRadioButton(obj)
                 {
                     LabelPosition = LabelPosition
                 };
                 return rb;
             case SelectionType.CheckBox:
             case SelectionType.SingleCheckBox:
-                var cb = new SelectableCheckBox(obj, Color)
+                var cb = new SelectableCheckBox(obj)
                 {
                     LabelPosition = LabelPosition
                 };
@@ -415,7 +418,6 @@ public partial class SelectionView : Grid
         {
             if (item is ISelection selection && value != null)
             {
-
                 selection.IsSelected = value.Contains(selection.Value);
             }
         }
@@ -490,9 +492,9 @@ public partial class SelectionView : Grid
         /// </summary>
         /// <param name="value"></param>
         /// <param name="selectionColor">Color of selected situation</param>
-        public SelectableButton(object value, Color selectionColor) : this(value)
+        public SelectableButton(object value, SelectionView parent) : this(value)
         {
-            SelectedColor = selectionColor;
+            SelectedColor = parent.Color;
         }
 
         public Color UnselectedColor { get => _unselectedColor; set { _unselectedColor = value; UpdateColors(); } }
@@ -520,7 +522,7 @@ public partial class SelectionView : Grid
                 {
                     return;
                 }
-                
+
                 _isSelected = value;
                 UpdateColors();
             }
@@ -586,14 +588,6 @@ public partial class SelectionView : Grid
         }
 
         /// <summary>
-        /// Colored Constructor
-        /// </summary>
-        public SelectableRadioButton(object value, Color color) : this(value)
-        {
-            Color = color;
-        }
-
-        /// <summary>
         /// ISelection interface property
         /// </summary>
         public bool IsSelected
@@ -624,7 +618,6 @@ public partial class SelectionView : Grid
         /// </summary>
         public SelectableCheckBox()
         {
-            Type = CheckType.Check;
             CheckChanged += (s, e) => Clicked?.Invoke(s, e);
         }
 
@@ -636,16 +629,6 @@ public partial class SelectionView : Grid
         {
             Value = value;
             Text = value?.ToString();
-        }
-
-        /// <summary>
-        /// Constructor with Value
-        /// </summary>
-        /// <param name="value">Parameter too keep</param>
-        /// <param name="color">Color of control</param>
-        public SelectableCheckBox(object value, Color color) : this(value)
-        {
-            Color = color;
         }
 
         /// <summary>

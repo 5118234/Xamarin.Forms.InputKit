@@ -135,9 +135,59 @@ RadioButton supports two label positions:
 ![inputkit maui radiobutton label position](../../images/radiobutton-customization-labelposition.gif)
 
 
+
+## Custom Content
+You can use your custom content as RadioButton content. You can use any `View` as content of CheckBox.
+
+```xml
+<input:RadioButtonGroupView x:Name="groupView">
+    <input:RadioButton>
+        <Image Source="https://seeklogo.com/images/X/xamarin-logo-F85620A85D-seeklogo.com.png" WidthRequest="50" HeightRequest="50" />
+    </input:RadioButton>
+
+    <input:RadioButton>
+        <Image Source="dotnet_bot.png" WidthRequest="50" HeightRequest="50" />
+    </input:RadioButton>
+</input:RadioButtonGroupView>
+```
+
+![inputkit checkbox custom content](../../images/radiobutton-custom-content.gif)
+
+
+## Visual States
+RadioButton has 5 different visual states:
+- `Normal` : Default state.
+- `Selected` : When `IsChecked` is `true`.
+- `Disabled` : When `IsEnabled` is `false`.
+- `PointerOver` : When pointer is over the control. _(Desktop devices)_
+- `Pressed` : When control is pressed.
+
+You can define your styles on top of these states.
+
+```xml
+<Style TargetType="input:RadioButton" ApplyToDerivedTypes="True">
+    <Setter Property="VisualStateManager.VisualStateGroups">
+        <VisualStateGroupList>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal">
+                    <VisualState.Setters>
+                        <Setter Property="Color" Value="Red" />
+                        <Setter Property="TextColor" Value="Black" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Selected">
+                    <VisualState.Setters>
+                        <Setter Property="TextColor" Value="Red" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateGroupList>
+    </Setter>
+</Style>
+```
+
 ## Behaviors
 
 ** *Work in progess...* **:
 -  _Actions to override_ 
--  _VisualStates_
 -  _Make your own animation (?)_

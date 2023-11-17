@@ -7,6 +7,7 @@ using Microsoft.Maui;
 using Microsoft.Maui.Controls.Shapes;
 using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Path = Microsoft.Maui.Controls.Shapes.Path;
 
@@ -15,6 +16,7 @@ namespace InputKit.Shared.Controls;
 /// <summary>
 /// A checkbox for boolean inputs. It Includes a text inside
 /// </summary>
+[ContentProperty(nameof(ContentProxy))]
 public partial class CheckBox : StatefulStackLayout, IValidatable
 {
     public static GlobalSetting GlobalSetting { get; } = new GlobalSetting
@@ -26,7 +28,8 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         Size = 25,
         CornerRadius = 2,
         FontSize = 14,
-        LabelPosition = LabelPosition.After
+        LabelPosition = LabelPosition.After,
+        LineBreakMode = LineBreakMode.WordWrap
     };
 
     #region Constants
@@ -54,8 +57,10 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         MaximumWidthRequest = GlobalSetting.Size,
         Scale = 0,
     };
+    protected internal ContentView contentHolder = new ContentView();
     protected internal Label lblOption = new Label
     {
+        LineBreakMode = GlobalSetting.LineBreakMode,
         VerticalOptions = LayoutOptions.Center,
         HorizontalOptions = LayoutOptions.Start,
         FontSize = GlobalSetting.FontSize,
@@ -63,6 +68,8 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         FontFamily = GlobalSetting.FontFamily,
         IsVisible = false
     };
+
+    public View ContentProxy { get => contentHolder.Content; set => contentHolder.Content = value; }
 
     protected Lazy<Path> iconValidation;
 
@@ -75,17 +82,17 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
     /// </summary>
     public CheckBox()
     {
-        InitVisualStates();
         Orientation = StackOrientation.Horizontal;
         Spacing = 10;
         ApplyIsCheckedAction = ApplyIsChecked;
         ApplyIsPressedAction = ApplyIsPressed;
-
+        contentHolder.Content = lblOption;
         IconLayout = new Grid
         {
             MinimumWidthRequest = GlobalSetting.Size,
             HeightRequest = GlobalSetting.Size,
             VerticalOptions = LayoutOptions.Center,
+            HorizontalOptions = LayoutOptions.Center,
             Children =
             {
                 outlineBox,
@@ -136,11 +143,6 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
     public Action<CheckBox, bool> ApplyIsCheckedAction { get; set; }
 
     /// <summary>
-    /// Applies pressed effect. Default value is <see cref="ApplyIsChecked(CheckBox, bool)"/>. You can set another <see cref="void"/> to make custom pressed effects.
-    /// </summary>
-    public Action<CheckBox, bool> ApplyIsPressedAction { get; set; }
-
-    /// <summary>
     /// Executed when check changed
     /// </summary>
     public ICommand CheckChangedCommand { get; set; }
@@ -158,7 +160,14 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
     /// <summary>
     /// Text to display right of CheckBox
     /// </summary>
-    public string Text { get => lblOption.Text; set { lblOption.Text = value; lblOption.IsVisible = !string.IsNullOrEmpty(value); } }
+    public string Text
+    {
+        get => lblOption.Text; set
+        {
+            lblOption.Text = value; lblOption.IsVisible = !string.IsNullOrEmpty(value);
+            contentHolder.Content = lblOption;
+        }
+    }
 
     /// <summary>
     /// IsChecked Property
@@ -228,9 +237,6 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
     /// </summary>
     public string FontFamily { get => (string)GetValue(FontFamilyProperty); set => SetValue(FontFamilyProperty, value); }
 
-    [Obsolete("This option is removed. Use CustomIconGeometry", error: true)]
-    public ImageSource CustomIcon { get => default; set { } }
-
     [TypeConverter(typeof(PathGeometryConverter))]
     public Geometry IconGeometry { get => (Geometry)GetValue(IconGeometryProperty); set => SetValue(IconGeometryProperty, value); }
 
@@ -256,6 +262,20 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         set => SetValue(ValidationColorProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the line break mode for the label.
+    /// </summary>
+    public LineBreakMode LineBreakMode { get => (LineBreakMode)GetValue(LineBreakModeProperty); set => SetValue(LineBreakModeProperty, value); }
+
+    /// <summary>
+    /// Gets or sets the vertical options for the icon.
+    /// </summary>
+    public LayoutOptions IconVerticalOptions { get => (LayoutOptions)GetValue(IconVerticalOptionsProperty); set => SetValue(IconVerticalOptionsProperty, value); }
+
+    /// <summary>
+    /// Gets or sets the horizontal options for the icon.
+    /// </summary>
+    public LayoutOptions IconHorizontalOptions { get => (LayoutOptions)GetValue(IconHorizontalOptionsProperty); set => SetValue(IconHorizontalOptionsProperty, value); }
     #endregion
 
     #region Validation
@@ -273,7 +293,7 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
     /// <summary>
     /// Not available for this control
     /// </summary>
-    public void DisplayValidation()
+    public virtual void DisplayValidation()
     {
         if (IsValid)
         {
@@ -290,6 +310,11 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         }
 
         OnPropertyChanged(nameof(IsValid));
+    }
+
+    public virtual void ResetValidation()
+    {
+        this.Remove(iconValidation.Value);
     }
 
     #endregion
@@ -335,6 +360,16 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
 
     public static readonly BindableProperty TypeProperty = BindableProperty.Create(nameof(Type), typeof(CheckType), typeof(CheckBox), defaultValue: CheckType.Regular,
         propertyChanged: (bindable, oldValue, newValue) => (bindable as CheckBox).UpdateType());
+
+    public static readonly BindableProperty LineBreakModeProperty = BindableProperty.Create(nameof(LineBreakMode), typeof(LineBreakMode), typeof(CheckBox), defaultValue: GlobalSetting.LineBreakMode,
+        propertyChanged: (bindable, oldValue, newValue) => (bindable as CheckBox).lblOption.LineBreakMode = (LineBreakMode)newValue);
+
+    public static readonly BindableProperty IconVerticalOptionsProperty = BindableProperty.Create(nameof(IconVerticalOptions), typeof(LayoutOptions), typeof(CheckBox), defaultValue: LayoutOptions.Center,
+        propertyChanged: (bindable, oldValue, newValue) => (bindable as CheckBox).IconLayout.VerticalOptions = (LayoutOptions)newValue);
+
+    public static readonly BindableProperty IconHorizontalOptionsProperty = BindableProperty.Create(nameof(IconHorizontalOptions), typeof(LayoutOptions), typeof(CheckBox), defaultValue: LayoutOptions.Center,
+        propertyChanged: (bindable, oldValue, newValue) => (bindable as CheckBox).IconLayout.HorizontalOptions = (LayoutOptions)newValue);
+
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     #endregion
 
@@ -347,22 +382,30 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         {
             lblOption.HorizontalOptions = LayoutOptions.Start;
             Children.Add(IconLayout);
-            Children.Add(lblOption);
+            Children.Add(contentHolder);
         }
         else
         {
             lblOption.HorizontalOptions = LayoutOptions.FillAndExpand;
-            Children.Add(lblOption);
+            Children.Add(contentHolder);
             Children.Add(IconLayout);
         }
     }
 
-    protected override void OnSizeAllocated(double width, double height)
+    protected override async void OnSizeAllocated(double width, double height)
     {
+        base.OnSizeAllocated(width, height);
+
         // TODO: Remove this logic after resolution of https://github.com/dotnet/maui/issues/8873
         // This is a workaround.
-        lblOption.MaximumWidthRequest = this.Width - IconLayout.Width;
-        base.OnSizeAllocated(width, height);
+
+#if ANDROID
+        await Task.Delay(1);
+#endif
+        if (IconLayout.Width != -1 && lblOption.Width > this.Width)
+        {
+            lblOption.MaximumWidthRequest = this.Width - this.Spacing - IconLayout.Width;
+        }
     }
 
     void ExecuteCommand()
@@ -434,38 +477,6 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         lblOption.FontFamily = value;
     }
 
-    protected virtual void InitVisualStates()
-    {
-        VisualStateManager.SetVisualStateGroups(this, new VisualStateGroupList
-            {
-                new VisualStateGroup
-                {
-                    Name = "InputKitStates",
-                    TargetType = typeof(CheckBox),
-                    States =
-                    {
-                        new VisualState
-                        {
-                            Name = "Pressed",
-                            TargetType = typeof(CheckBox),
-                            Setters =
-                            {
-                                new Setter { Property = IsPressedProperty, Value = true }
-                            }
-                        },
-                        new VisualState
-                        {
-                            Name = "Normal",
-                            TargetType = typeof(RadioButton),
-                            Setters =
-                            {
-                                new Setter { Property = IsPressedProperty, Value = false }
-                            }
-                        }
-                    }
-                }
-            });
-    }
     public static void ApplyIsChecked(CheckBox checkBox, bool isChecked)
     {
         checkBox.selectedIcon.ScaleTo(isChecked ? CHECK_SIZE_RATIO : 0, 160);
@@ -480,28 +491,25 @@ public partial class CheckBox : StatefulStackLayout, IValidatable
         {
             checkBox.DisplayValidation();
         }
+
+        var state = checkBox.IsChecked ? VisualStateManager.CommonStates.Selected : VisualStateManager.CommonStates.Normal;
+        VisualStateManager.GoToState(checkBox, state);
+        checkBox.DefaultVisualState = state;
     }
 
-    public static async void ApplyIsPressed(CheckBox checkBox, bool isPressed)
+    public static async void ApplyIsPressed(StatefulStackLayout statefulLayout, bool isPressed)
     {
-        await checkBox.outlineBox.ScaleTo(isPressed ? .8 : 1, 50, Easing.BounceIn);
-        var radiusVal = isPressed ? checkBox.outlineBox.RadiusX * 2f : checkBox.CornerRadius;
-        checkBox.outlineBox.RadiusX = radiusVal;
+        if (statefulLayout is CheckBox checkBox)
+        {
+            await checkBox.outlineBox.ScaleTo(isPressed ? .8 : 1, 50, Easing.BounceIn);
+            var radiusVal = isPressed ? checkBox.outlineBox.RadiusX * 2f : checkBox.CornerRadius;
+            checkBox.outlineBox.RadiusX = radiusVal;
+        }
     }
     #endregion
 
     public enum CheckType
     {
-        [Obsolete("This option is removed. Use IconGeometry instead.")]
-        Box,
-        [Obsolete("This option is removed. Use IconGeometry instead")]
-        Check,
-        [Obsolete("This option is removed. Use IconGeometry instead")]
-        Cross,
-        [Obsolete("This option is removed. Use IconGeometry instead")]
-        Star,
-        [Obsolete("This option is removed. Use IconGeometry instead")]
-        Custom = 90,
         Regular,
         Filled,
         Material,

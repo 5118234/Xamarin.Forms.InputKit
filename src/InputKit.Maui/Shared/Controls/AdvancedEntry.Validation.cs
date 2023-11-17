@@ -92,6 +92,13 @@ public partial class AdvancedEntry : IValidatable
         CheckAndDisplayValidations();
     }
 
+    public void ResetValidation()
+    {
+        RemoveValidationWarning();
+        _lastValidationState = null;
+        Text = string.Empty;
+    }
+
     private bool? _lastValidationState;
 
     protected virtual void CheckAndDisplayValidations()

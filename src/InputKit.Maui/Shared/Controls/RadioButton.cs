@@ -11,6 +11,7 @@ namespace InputKit.Shared.Controls;
 /// <summary>
 /// Radio Button with Text
 /// </summary>
+[ContentProperty(nameof(ContentProxy))]
 public class RadioButton : StatefulStackLayout
 {
     #region Statics
@@ -25,7 +26,8 @@ public class RadioButton : StatefulStackLayout
         Size = 25,
         CornerRadius = -1,
         FontSize = 14,
-        LabelPosition = LabelPosition.After
+        LabelPosition = LabelPosition.After,
+        LineBreakMode = LineBreakMode.WordWrap
     };
     #endregion
 
@@ -50,17 +52,20 @@ public class RadioButton : StatefulStackLayout
         HeightRequest = GlobalSetting.Size,
         WidthRequest = GlobalSetting.Size,
     };
+    protected internal ContentView contentHolder = new ContentView();
     protected internal Label lblText = new Label
     {
-        VerticalTextAlignment = TextAlignment.Center,
+        LineBreakMode = GlobalSetting.LineBreakMode,
         VerticalOptions = LayoutOptions.Center,
         HorizontalOptions = LayoutOptions.Start,
-        TextColor = GlobalSetting.TextColor,
         FontSize = GlobalSetting.FontSize,
+        TextColor = GlobalSetting.TextColor,
         FontFamily = GlobalSetting.FontFamily,
-        MaxLines = 3,
-        LineBreakMode = LineBreakMode.WordWrap
+        IsVisible = false
     };
+
+    public View ContentProxy { get => contentHolder.Content; set => contentHolder.Content = value; }
+
     private bool _isDisabled;
     protected const double DOT_FULL_SCALE = .65;
     #endregion
@@ -71,17 +76,16 @@ public class RadioButton : StatefulStackLayout
     /// </summary>
     public RadioButton()
     {
-        InitVisualStates();
-
         Orientation = StackOrientation.Horizontal;
         Spacing = 10;
-        
+
         ApplyIsCheckedAction = ApplyIsChecked;
         ApplyIsPressedAction = ApplyIsPressed;
-
+        contentHolder.Content = lblText;
         IconLayout = new Grid
         {
             VerticalOptions = LayoutOptions.Center,
+            HorizontalOptions = LayoutOptions.Center,
             Children =
             {
                 iconCircle,
@@ -126,11 +130,6 @@ public class RadioButton : StatefulStackLayout
     public Action<bool> ApplyIsCheckedAction { get; set; }
 
     /// <summary>
-    /// Applies pressed effect. Default value is <see cref="ApplyIsPressed(bool)"/>. You can set another <see cref="void"/> to make custom pressed effects.
-    /// </summary>
-    public Action<bool> ApplyIsPressedAction { get; set; }
-
-    /// <summary>
     /// Click command, executed when clicked.  Parameter will be Value property if CommandParameter is not set
     /// </summary>
     public ICommand ClickCommand { get; set; }
@@ -143,7 +142,7 @@ public class RadioButton : StatefulStackLayout
     /// <summary>
     /// Value to keep inside of Radio Button
     /// </summary>
-    public object Value { get; set; }
+    public object Value { get => GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
 
     /// <summary>
     /// Gets or Sets, is that Radio Button selected/choosed/Checked
@@ -162,7 +161,14 @@ public class RadioButton : StatefulStackLayout
     /// <summary>
     /// Text Description of Radio Button. It will be displayed right of Radio Button
     /// </summary>
-    public string Text { get => lblText.Text; set { lblText.Text = value; lblText.IsVisible = !string.IsNullOrEmpty(value); } }
+    public string Text
+    {
+        get => lblText.Text; set
+        {
+            lblText.Text = value; lblText.IsVisible = !string.IsNullOrEmpty(value);
+            contentHolder.Content = lblText;
+        }
+    }
     /// <summary>
     /// Fontsize of Description Text
     /// </summary>
@@ -170,14 +176,6 @@ public class RadioButton : StatefulStackLayout
     [System.ComponentModel.TypeConverter(typeof(FontSizeConverter))]
     public double TextFontSize { get => lblText.FontSize; set => lblText.FontSize = value; }
 
-    /// <summary>
-    /// Set your own background image instead of default circle.
-    /// </summary>
-    [Obsolete("This option is removed.")]
-    public ImageSource CircleImage { get => default; set { } }
-
-    [Obsolete("This option is removed.")]
-    public ImageSource CheckedImage { get => default; set { } }
 
     [TypeConverter(typeof(PathGeometryConverter))]
     public Geometry SelectedIconGeomerty { get => (Geometry)GetValue(SelectedIconGeomertyProperty); set => SetValue(SelectedIconGeomertyProperty, value); }
@@ -201,12 +199,7 @@ public class RadioButton : StatefulStackLayout
     /// Color of description text of Radio Button
     /// </summary>
     public Color TextColor { get => (Color)GetValue(TextColorProperty); set => SetValue(TextColorProperty, value); }
-    /// <summary>
-    /// Internal use only. Applies effect when pressed.
-    /// </summary>
 
-    [Browsable(false)]
-    public bool IsPressed { get => (bool)GetValue(IsPressedProperty); set => SetValue(IsPressedProperty, value); }
     /// <summary>
     /// Gets or sets the label position.
     /// </summary>
@@ -215,6 +208,22 @@ public class RadioButton : StatefulStackLayout
         get => (LabelPosition)GetValue(LabelPositionProperty);
         set => SetValue(LabelPositionProperty, value);
     }
+
+    /// <summary>
+    /// Gets or sets the line break mode for the label.
+    /// </summary>
+    public LineBreakMode LineBreakMode { get => (LineBreakMode)GetValue(LineBreakModeProperty); set => SetValue(LineBreakModeProperty, value); }
+
+    /// <summary>
+    /// Gets or sets the vertical options for the icon.
+    /// </summary>
+    public LayoutOptions IconVerticalOptions { get => (LayoutOptions)GetValue(IconVerticalOptionsProperty); set => SetValue(IconVerticalOptionsProperty, value); }
+
+    /// <summary>
+    /// Gets or sets the horizontal options for the icon.
+    /// </summary>
+    public LayoutOptions IconHorizontalOptions { get => (LayoutOptions)GetValue(IconHorizontalOptionsProperty); set => SetValue(IconHorizontalOptionsProperty, value); }
+
     #endregion
 
     #region BindableProperties
@@ -228,7 +237,6 @@ public class RadioButton : StatefulStackLayout
     public static readonly BindableProperty TextColorProperty = BindableProperty.Create(nameof(TextColor), typeof(Color), typeof(RadioButton), GlobalSetting.TextColor, propertyChanged: (bo, ov, nv) => (bo as RadioButton).UpdateColors());
     public static readonly BindableProperty ClickCommandProperty = BindableProperty.Create(nameof(ClickCommand), typeof(ICommand), typeof(RadioButton), null, propertyChanged: (bo, ov, nv) => (bo as RadioButton).ClickCommand = (ICommand)nv);
     public static readonly BindableProperty CommandParameterProperty = BindableProperty.Create(nameof(CommandParameter), typeof(object), typeof(RadioButton), propertyChanged: (bo, ov, nv) => (bo as RadioButton).CommandParameter = nv);
-    public static readonly BindableProperty IsPressedProperty = BindableProperty.Create(nameof(IsPressed), typeof(bool), typeof(RadioButton), propertyChanged: (bo, ov, nv) => (bo as RadioButton).ApplyIsPressedAction((bool)nv));
     public static readonly BindableProperty FontFamilyProperty = BindableProperty.Create(nameof(FontFamily), typeof(string), typeof(RadioButton), propertyChanged: (bo, ov, nv) => (bo as RadioButton).FontFamily = (string)nv);
     public static readonly BindableProperty SelectedIconGeomertyProperty = BindableProperty.Create(nameof(SelectedIconGeomerty), typeof(Geometry), typeof(RadioButton), PredefinedShapes.Dot, propertyChanged: (bo, ov, nv) => (bo as RadioButton).UpdateShape());
     public static readonly BindableProperty LabelPositionProperty = BindableProperty.Create(
@@ -236,6 +244,18 @@ public class RadioButton : StatefulStackLayout
         returnType: typeof(LabelPosition), defaultBindingMode: BindingMode.TwoWay,
         defaultValue: GlobalSetting.LabelPosition,
         propertyChanged: (bo, ov, nv) => (bo as RadioButton).ApplyLabelPosition((LabelPosition)nv));
+
+
+    public static readonly BindableProperty LineBreakModeProperty = BindableProperty.Create(nameof(LineBreakMode), typeof(LineBreakMode), typeof(RadioButton), defaultValue: GlobalSetting.LineBreakMode,
+        propertyChanged: (bindable, oldValue, newValue) => (bindable as RadioButton).lblText.LineBreakMode = (LineBreakMode)newValue);
+
+    public static readonly BindableProperty IconVerticalOptionsProperty = BindableProperty.Create(nameof(IconVerticalOptions), typeof(LayoutOptions), typeof(RadioButton), defaultValue: LayoutOptions.Center,
+        propertyChanged: (bindable, oldValue, newValue) => (bindable as RadioButton).IconLayout.VerticalOptions = (LayoutOptions)newValue);
+
+    public static readonly BindableProperty IconHorizontalOptionsProperty = BindableProperty.Create(nameof(IconHorizontalOptions), typeof(LayoutOptions), typeof(RadioButton), defaultValue: LayoutOptions.Center,
+        propertyChanged: (bindable, oldValue, newValue) => (bindable as RadioButton).IconLayout.HorizontalOptions = (LayoutOptions)newValue);
+
+    public static readonly BindableProperty ValueProperty = BindableProperty.Create(nameof(Value), typeof(object), typeof(RadioButton), defaultBindingMode: BindingMode.OneTime);
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     #endregion
 
@@ -247,13 +267,29 @@ public class RadioButton : StatefulStackLayout
         {
             lblText.HorizontalOptions = LayoutOptions.Start;
             Children.Add(IconLayout);
-            Children.Add(lblText);
+            Children.Add(contentHolder);
         }
         else
         {
             lblText.HorizontalOptions = LayoutOptions.FillAndExpand;
-            Children.Add(lblText);
+            Children.Add(contentHolder);
             Children.Add(IconLayout);
+        }
+    }
+
+    protected override async void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+
+        // TODO: Remove this logic after resolution of https://github.com/dotnet/maui/issues/8873
+        // This is a workaround.
+
+#if ANDROID
+        await Task.Delay(1);
+#endif
+        if (IconLayout.Width != -1 && lblText.Width > this.Width)
+        {
+            lblText.MaximumWidthRequest = this.Width - this.Spacing - IconLayout.Width;
         }
     }
 
@@ -284,44 +320,18 @@ public class RadioButton : StatefulStackLayout
             UpdateColors();
             Checked?.Invoke(this, null);
         }
+
+        var state = isChecked ? VisualStateManager.CommonStates.Selected : VisualStateManager.CommonStates.Normal;
+        VisualStateManager.GoToState(this, state);
+        DefaultVisualState = state;
     }
 
-    public virtual async void ApplyIsPressed(bool isPressed)
+    public virtual async void ApplyIsPressed(StatefulStackLayout statefulLayout, bool isPressed)
     {
-        await IconLayout.ScaleTo(isPressed ? .8 : 1, 100);
-    }
-
-    void InitVisualStates()
-    {
-        VisualStateManager.SetVisualStateGroups(this, new VisualStateGroupList
-            {
-                new VisualStateGroup
-                {
-                    Name = "InputKitStates",
-                    TargetType = typeof(RadioButton),
-                    States =
-                    {
-                        new VisualState
-                        {
-                            Name = "Pressed",
-                            TargetType = typeof(RadioButton),
-                            Setters =
-                            {
-                                new Setter { Property = IsPressedProperty, Value = true }
-                            }
-                        },
-                        new VisualState
-                        {
-                            Name = "Normal",
-                            TargetType = typeof(RadioButton),
-                            Setters =
-                            {
-                                new Setter { Property = IsPressedProperty, Value = false }
-                            }
-                        }
-                    }
-                }
-            });
+        if (statefulLayout is RadioButton radioButton)
+        {
+            await radioButton.IconLayout.ScaleTo(isPressed ? .8 : 1, 100);
+        }
     }
     #endregion
 }

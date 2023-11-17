@@ -180,6 +180,56 @@ Color property will be applied when you set `Type` to `Material`.
 
 ![inputkit checkbox color customization](../../images/checkbox-customization-colors-material.gif)
 
+## Custom Content
+You can use your custom content as CheckBox content. You can use any `View` as content of CheckBox.
+
+```xml
+<input:CheckBox>
+    <Image Source="xamarin.png" HeightRequest="50" WidthRequest="50" />
+</input:CheckBox>
+
+<input:CheckBox>
+    <Image Source="dotnet_bot.png" WidthRequest="50" HeightRequest="50" />
+</input:CheckBox>
+```
+
+![inputkit checkbox custom content](../../images/checkbox-custom-content.gif)
+
+
+## Visual States
+CheckBox has 5 different visual states:
+- `Normal` : Default state.
+- `Selected` : When `IsChecked` is `true`.
+- `Disabled` : When `IsEnabled` is `false`.
+- `PointerOver` : When pointer is over the control. _(Desktop devices)_
+- `Pressed` : When control is pressed.
+
+You can define your styles on top of these states.
+
+```xml
+<Style TargetType="input:CheckBox" ApplyToDerivedTypes="True">
+    <Setter Property="VisualStateManager.VisualStateGroups">
+        <VisualStateGroupList>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal">
+                    <VisualState.Setters>
+                        <Setter Property="Color" Value="Red" />
+                        <Setter Property="TextColor" Value="Black" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Selected">
+                    <VisualState.Setters>
+                        <Setter Property="TextColor" Value="Red" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateGroupList>
+    </Setter>
+</Style>
+```
+
+![inputkit checkbox visual states](../../images/checkbox-visual-states.gif)
+
 ## Behaviors
 
 ** *Work in progess...* **:
